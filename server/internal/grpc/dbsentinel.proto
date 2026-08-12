@@ -1,0 +1,101 @@
+syntax = "proto3";
+package dbsentinel;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "pkg/pb/dbsentinel;dbsentinelv1";
+
+message NodeStatus {
+  string node_id = 1;
+  enum Role {
+    NODE_ROLE_UNKNOWN = 0;
+    NODE_ROLE_MASTER = 1;
+    NODE_ROLE_REPLICA = 2;
+  }
+  Role role = 2;
+  google.protobuf.Duration lag_seconds = 3;
+  google.protobuf.Timestamp uptime_seconds = 4;
+  map<string, string> metrics = 5; // e.g., "size_bytes", "active_connections"
+  uint32 cluster_version = 6;
+}
+
+message BackupRequest {
+  string database_name = 1;
+  enum Backup_type {
+    BACKUP_TYPE_UNKNOWN = 0;
+    BACKUP_TYPE_FULL = 1;
+    BACKUP_TYPE_WAL = 2;
+  }
+  Backup_type backup_type = 2;
+}
+
+message BackupProgress {
+  string backup_id = 1;
+  uint32 progress_percent = 2;
+  string status_message = 3; // e.g. "Dumping table users...", "Compressing..."
+  bool is_completed = 4;
+}
+
+message VerificationRequest {
+  string backup_id = 1;
+}
+
+message VerificationResult {
+  string backup_id = 1;
+  bool success = 2;
+  google.protobuf.Duration restore_time_ms = 3;
+  string verification_log = 4;
+}
+
+message FailoverRequest {
+  string target_replica_id = 1;
+  bool force = 2;
+  uint32 cluster_version = 3;
+}
+
+message FailoverResponse {
+  string cluster_id = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message StreamNodeStatusRequest {
+  string cluster_id = 1;
+}
+
+message ListBackupsRequest {
+    repeated string backup_ids = 1;
+}
+
+message ListBackupsResponse {
+    repeated ListBackups list_backups = 1;
+}
+
+message ListBackups {
+    string backup_id = 1;
+    enum Backup_type {
+        BACKUP_TYPE_UNKNOWN = 0;
+        BACKUP_TYPE_FULL = 1;
+        BACKUP_TYPE_WAL = 2;
+    }
+    Backup_type backup_type = 2;
+    bool success = 3;
+    google.protobuf.Timestamp created_at = 4;
+}
+
+service DBSentinelService {
+  // Стриминг состояния нод в реальном времени (Server Streaming)
+  rpc StreamNodeStatus (StreamNodeStatusRequest) returns (stream NodeStatus) {}
+
+  // Запуск бэкапа со стримингом прогресса (Server Streaming)
+  rpc TriggerBackup (BackupRequest) returns (stream BackupProgress) {}
+
+  // Проверка бэкапа в Docker через Testcontainers
+  rpc TriggerRestoreVerification (VerificationRequest) returns (VerificationResult) {}
+
+  // Экстренный failover
+  rpc TriggerFailover (FailoverRequest) returns (FailoverResponse) {}
+
+  rpc ListBackups (ListBackupsRequest) returns (ListBackupsResponse) {}
+}
