@@ -1,0 +1,1 @@
+echo "host replication replicator 172.20.0.0/16" >> ${PGDATA}/pg_hba.conf

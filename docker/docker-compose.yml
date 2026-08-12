@@ -8,6 +8,7 @@ services:
       POSTGRES_DB: main_db
     volumes:
       - postgres-master-data:/var/lib/postgresql/data
+      - ./cmd/setup_master.sh:/docker-entrypoint-initdb.d
     networks:
       - core-db
     healthcheck:
@@ -19,6 +20,7 @@ services:
 
   postgres-replica:
     image: postgres:18
+    entrypoint: ./cmd/init_replica.sh
     container_name: postgres-replica
     environment:
       POSTGRES_USER: db_sentinel
@@ -26,6 +28,7 @@ services:
       POSTGRES_DB: main_db
     volumes:
       - postgres-replica-data:/var/lib/postgresql/data
+      - ./cmd/init_replica.sh:/init_replica.sh
     networks:
       - core-db
     healthcheck:
@@ -68,8 +71,6 @@ services:
       - default
     depends_on:
       postgres-master:
-        condition: service_healthy
-      postgres-replica:
         condition: service_healthy
 
 volumes:
