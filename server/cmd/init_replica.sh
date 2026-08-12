@@ -7,14 +7,19 @@ do
     sleep 1
 done
 
-if [[ -f "${PGDATA}/standby.signal" ||  -f "${PGDATA}/postgresql.conf" || -f "${PGDATA}/$PG_VERSION" ]]; then
-    exec postgres -D /var/lib/postgresql/data
+export PGPASSWORD="$POSTGRES_PASSWORD"
+
+while [ "$(psql -At -U db_sentinel -h postgres-master -c "SELECT pg_is_in_recovery();")" == "t" ];
+do
+    sleep 1
+done
+
+if [ -f "${PGDATA}/standby.signal" ]; then
+    exec postgres -D $PGDATA
 fi
 
-rm -rf "${PGDATA:-"/tmp/some_catalog"}"
-
-export PGPASSWORD="$POSTGRES_PASSWORD"
+rm -rf "${PGDATA:-"/tmp/some_catalog/"}"/*
 
 pg_basebackup -P -R -h postgres-master -p 5432
 
-exec postgres -D /var/lib/postgresql/data
+exec postgres -D $PGDATA
