@@ -1,0 +1,91 @@
+services:
+  postgres-master:
+    image: postgres:18
+    container_name: postgres-master
+    environment:
+      POSTGRES_USER: db_sentinel
+      POSTGRES_PASSWORD: sentinel
+      POSTGRES_DB: main_db
+    volumes:
+      - postgres-master-data:/var/lib/postgresql/data
+    networks:
+      - core-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_is_ready -U db_sentinel -d main_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  postgres-replica:
+    image: postgres:18
+    container_name: postgres-replica
+    environment:
+      POSTGRES_USER: db_sentinel
+      POSTGRES_PASSWORD: sentinel
+      POSTGRES_DB: main_db
+    volumes:
+      - postgres-replica-data:/var/lib/postgresql/data
+    networks:
+      - core-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_is_ready -U db_sentinel -d main_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      postgres-master:
+        condition: service_healthy
+
+  dbsentinel-core:
+    build: ./cmd/server
+    user: "1000:1000"
+    secrets:
+      - source: server_cert
+        target: /etc/dbsentinel/tls/server.crt
+        uid: "1000"
+        gid: "1000"
+        mode: 0400
+      - source: server_key
+        target: /etc/dbsentinel/tls/server.key
+        uid: "1000"
+        gid: "1000"
+        mode: 0400
+      - source: ca_cert
+        target: /etc/dbsentinel/tls/ca.crt
+        uid: "1000"
+        gid: "1000"
+        mode: 0400
+    ports:
+      - "9090:9090"
+    environment:
+      DB_SENTINEL_TLS_CERT: "/etc/dbsentinel/tls/server.crt"
+      DB_SENTINEL_TLS_KEY: "/etc/dbsentinel/tls/server.key"
+      DB_SENTINEL_CA_CERT: "/etc/dbsentinel/tls/ca.crt"
+    networks:
+      - core-db
+      - default
+    depends_on:
+      postgres-master:
+        condition: service_healthy
+      postgres-replica:
+        condition: service_healthy
+
+volumes:
+  postgres-master-data:
+  postgres-replica-data:
+
+networks:
+  core-db:
+    internal: true
+  default:
+    driver: bridge
+
+secrets:
+  server_cert:
+    file: ./server/tls/server.crt
+  server_key:
+    file: ./server/tls/server.key
+  ca_cert:
+    file: ./server/tls/ca.crt
