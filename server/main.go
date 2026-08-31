@@ -13,7 +13,7 @@ import (
 func main() {
 	cfg := config.GetConfig()
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
 		cfg.PgMasterHost, cfg.PgMasterUser, cfg.PgMasterPassword, cfg.PgMasterDBName, cfg.PgMasterPort)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})

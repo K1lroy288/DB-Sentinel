@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -26,14 +28,20 @@ func GetConfig() *Config {
 }
 
 func loadConfig() {
-	viper.AddConfigPath("../cmd")
-	viper.SetConfigFile(".env")
-	viper.SetConfigType("env")
-
 	viper.AutomaticEnv()
 
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	viper.SetConfigName(".env")
+	viper.SetConfigType("env")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("../")
+
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf(".env file read error: %v", err)
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if !errors.As(err, &configFileNotFoundError) {
+			log.Printf("warning: .env file is not found, read from ENV: %v", err)
+		}
 	}
 
 	var cfg Config
