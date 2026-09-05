@@ -1,9 +1,7 @@
 package config
 
 import (
-	"errors"
 	"log"
-	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -23,31 +21,32 @@ var (
 )
 
 func GetConfig() *Config {
-	once.Do(loadConfig)
+	once.Do(func() {
+		instance = loadConfig()
+	})
 	return instance
 }
 
-func loadConfig() {
-	viper.AutomaticEnv()
+func loadConfig() *Config {
+	v := viper.New()
 
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
 
-	viper.SetConfigName(".env")
-	viper.SetConfigType("env")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("../")
-
-	if err := viper.ReadInConfig(); err != nil {
-		var configFileNotFoundError viper.ConfigFileNotFoundError
-		if !errors.As(err, &configFileNotFoundError) {
-			log.Printf("warning: .env file is not found, read from ENV: %v", err)
-		}
+	for _, key := range []string{
+		"PG_MASTER_HOST",
+		"PG_MASTER_PORT",
+		"PG_MASTER_USER",
+		"PG_MASTER_PASSWORD",
+		"PG_MASTER_DB_NAME",
+	} {
+		_ = v.BindEnv(key)
 	}
 
 	var cfg Config
-	if err := viper.Unmarshal(&cfg); err != nil {
-		log.Fatalf("config unmarshal error: %v", err)
+	if err := v.Unmarshal(&cfg); err != nil {
+		log.Printf("config unmarshal error: %v", err)
+		return nil
 	}
 
-	instance = &cfg
+	return &cfg
 }
