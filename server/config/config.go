@@ -1,3 +1,4 @@
+// Package config manages application configuration setup and environment variable binding.
 package config
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config holds the application configuration parameters loaded from environment variables.
 type Config struct {
 	PgMasterHost     string `mapstructure:"PG_MASTER_HOST"`
 	PgMasterPort     int    `mapstructure:"PG_MASTER_PORT"`
@@ -20,6 +22,7 @@ var (
 	once     sync.Once
 )
 
+// GetConfig returns a thread-safe singleton instance of the application Config.
 func GetConfig() *Config {
 	once.Do(func() {
 		instance = loadConfig()
