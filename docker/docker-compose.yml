@@ -2,10 +2,12 @@ services:
   postgres-master:
     image: postgres:18
     container_name: postgres-master
+    env_file:
+      - ../server/.env
     environment:
-      POSTGRES_USER: db_sentinel
-      POSTGRES_PASSWORD: sentinel
-      POSTGRES_DB: main_db
+      POSTGRES_DB: ${PG_MASTER_DB_NAME}
+      POSTGRES_USER: ${PG_MASTER_USER}
+      POSTGRES_PASSWORD: ${PG_MASTER_PASSWORD}
     volumes:
       - postgres-master-data:/var/lib/postgresql
       - ../server/cmd/setup_master.sh:/docker-entrypoint-initdb.d/setup_master.sh
@@ -22,10 +24,12 @@ services:
     image: postgres:18
     entrypoint: ["bash", "/init_replica.sh"]
     container_name: postgres-replica
+    env_file:
+      - ../server/.env
     environment:
-      POSTGRES_USER: db_sentinel
-      POSTGRES_PASSWORD: sentinel
-      POSTGRES_DB: main_db
+      POSTGRES_USER: ${REPLICATION_USER}
+      POSTGRES_PASSWORD: ${REPLICATION_PASSWORD}
+      POSTGRES_DB: ${PG_MASTER_DB_NAME}
     volumes:
       - postgres-replica-data:/var/lib/postgresql
       - ../server/cmd/init_replica.sh:/init_replica.sh
