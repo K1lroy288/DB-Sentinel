@@ -1,0 +1,98 @@
+services:
+  postgres-master:
+    image: postgres:18
+    container_name: postgres-master
+    env_file:
+      - ../server/.env
+    environment:
+      POSTGRES_DB: ${PG_MASTER_DB_NAME}
+      POSTGRES_USER: ${PG_MASTER_USER}
+      POSTGRES_PASSWORD: ${PG_MASTER_PASSWORD}
+    volumes:
+      - postgres-master-data:/var/lib/postgresql
+      - ../server/cmd/setup_master.sh:/docker-entrypoint-initdb.d/setup_master.sh
+    networks:
+      - core-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  postgres-replica:
+    image: postgres:18
+    entrypoint: ["bash", "/init_replica.sh"]
+    container_name: postgres-replica
+    env_file:
+      - ../server/.env
+    environment:
+      POSTGRES_USER: ${REPLICATION_USER}
+      POSTGRES_PASSWORD: ${REPLICATION_PASSWORD}
+      POSTGRES_DB: ${PG_MASTER_DB_NAME}
+    volumes:
+      - postgres-replica-data:/var/lib/postgresql
+      - ../server/cmd/init_replica.sh:/init_replica.sh
+    networks:
+      - core-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      postgres-master:
+        condition: service_healthy
+
+  dbsentinel-core:
+    build: ../server
+    user: "1000:1000"
+    secrets:
+      - source: server_cert
+        target: /etc/dbsentinel/tls/server.crt
+        uid: "1000"
+        gid: "1000"
+        mode: 0400
+      - source: server_key
+        target: /etc/dbsentinel/tls/server.key
+        uid: "1000"
+        gid: "1000"
+        mode: 0400
+      - source: ca_cert
+        target: /etc/dbsentinel/tls/ca.crt
+        uid: "1000"
+        gid: "1000"
+        mode: 0400
+    ports:
+      - "9090:9090"
+    environment:
+      DB_SENTINEL_TLS_CERT: "/etc/dbsentinel/tls/server.crt"
+      DB_SENTINEL_TLS_KEY: "/etc/dbsentinel/tls/server.key"
+      DB_SENTINEL_CA_CERT: "/etc/dbsentinel/tls/ca.crt"
+    env_file:
+      - ../server/.env
+    networks:
+      - core-db
+      - default
+    depends_on:
+      postgres-master:
+        condition: service_healthy
+
+volumes:
+  postgres-master-data:
+  postgres-replica-data:
+
+networks:
+  core-db:
+    internal: true
+  default:
+    driver: bridge
+
+secrets:
+  server_cert:
+    file: ../server/tls/server.crt
+  server_key:
+    file: ../server/tls/server.key
+  ca_cert:
+    file: ../server/tls/ca.crt
