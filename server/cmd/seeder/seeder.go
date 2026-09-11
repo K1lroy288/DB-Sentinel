@@ -1,3 +1,5 @@
+// Package seeder provides functionality for populating the database
+// with initial mock data and checking database state.
 package seeder
 
 import (
@@ -10,6 +12,9 @@ import (
 	"gorm.io/gorm"
 )
 
+const successStatus = "success"
+
+// User represents a system user entity in the database.
 type User struct {
 	ID        uint        `gorm:"primaryKey"`
 	Username  string      `gorm:"type:varchar(50);not null;unique"`
@@ -18,12 +23,14 @@ type User struct {
 	Logs      []SystemLog `gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
 }
 
+// AppSetting represents system-wide key-value configuration settings.
 type AppSetting struct {
 	Key       string    `gorm:"type:varchar(50);primaryKey"`
 	Value     string    `gorm:"type:text;not null"`
 	UpdatedAt time.Time `gorm:"default:now()"`
 }
 
+// SystemLog represents audit logs for system operations and user actions.
 type SystemLog struct {
 	ID        uint            `gorm:"primaryKey"`
 	UserID    *uint           `gorm:"index"`
@@ -33,13 +40,11 @@ type SystemLog struct {
 	CreatedAt time.Time       `gorm:"default:now()"`
 }
 
+// DBSeeder drops existing tables, migrates schemas, and populates the database with test data.
 func DBSeeder(db *gorm.DB) {
-	// Инициализируем локальный генератор рандома, чтобы данные всегда отличались
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	log.Println("Dropping old tables if they exist...")
-	// КРИТИЧЕСКИ ВАЖНО: Сначала удаляем зависимую таблицу (SystemLog),
-	// и только потом родительскую (User), чтобы Postgres не ругался на Foreign Key.
 	err := db.Migrator().DropTable(&SystemLog{}, &AppSetting{}, &User{})
 	if err != nil {
 		log.Fatalf("Failed to drop tables: %v", err)
@@ -79,7 +84,7 @@ func DBSeeder(db *gorm.DB) {
 	}
 
 	actions := []string{"user.login", "user.logout", "backup.triggered", "settings.update", "topology.check"}
-	statuses := []string{"success", "success", "failed", "success"}
+	statuses := []string{successStatus, successStatus, "failed", successStatus}
 	var mockLogs []SystemLog
 
 	for i := 0; i < 50; i++ {
@@ -108,6 +113,7 @@ func DBSeeder(db *gorm.DB) {
 	)
 }
 
+// IsDatabaseEmpty checks if the database needs seeding by verifying table existence and user count.
 func IsDatabaseEmpty(db *gorm.DB) bool {
 	if !db.Migrator().HasTable(&User{}) {
 		return true

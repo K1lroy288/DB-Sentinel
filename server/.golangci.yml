@@ -1,0 +1,59 @@
+version: "2"
+
+run:
+  concurrency: 4
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+
+output:
+  formats:
+    text:
+      path: stdout
+
+linters:
+  default: none
+  enable:
+    - errcheck      
+    - govet        
+    - ineffassign  
+    - staticcheck  
+    - unused    
+    - goconst      
+    - gocyclo         
+    - misspell     
+    - revive     
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+      - path: \.pb\.go$
+        linters:
+          - goconst
+          - gofmt
+          - revive
+          - errcheck
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+    gocyclo:
+      min-complexity: 15
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    misspell:
+      locale: US  
+    
+
+formatters:
+  enable: 
+    - gofmt        
+    - goimports 
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

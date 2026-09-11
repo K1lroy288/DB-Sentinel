@@ -1,3 +1,4 @@
+// Package main is the entry point for the DB-Sentinel core service.
 package main
 
 import (
@@ -27,5 +28,4 @@ func main() {
 	} else {
 		log.Println("Database already contains data. Skipping seeder.")
 	}
-
 }
