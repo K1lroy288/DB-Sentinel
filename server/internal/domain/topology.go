@@ -84,8 +84,10 @@ type ReplicationLink struct {
 
 // TopologyGraph представляет полный граф топологии кластера в определённый момент времени.
 type TopologyGraph struct {
-	ClusterName string            `json:"clusterName"`
-	Timestamp   UnixMillisTime    `json:"timestamp"`
-	Nodes       []DatabaseNode    `json:"nodes"`
-	Links       []ReplicationLink `json:"links"`
+	ClusterName        string            `json:"clusterName"`
+	Timestamp          UnixMillisTime    `json:"timestamp"`
+	Nodes              []DatabaseNode    `json:"nodes"`
+	Links              []ReplicationLink `json:"links"`
+	SplitBrainDetected bool              `json:"splitBrainDetected,omitempty"`
+	Warnings           []string          `json:"warnings,omitempty"`
 }

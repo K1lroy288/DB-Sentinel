@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+const testConsulHost = "10.0.0.1"
+
 func TestConsulSeedProvider(t *testing.T) {
 	ctx := context.Background()
 
@@ -62,7 +64,7 @@ func TestConsulSeedProvider(t *testing.T) {
 			t.Fatalf("expected 2 seeds, got %d", len(seeds))
 		}
 
-		if seeds[0].Host != "10.0.0.1" || seeds[0].Port != 5432 {
+		if seeds[0].Host != testConsulHost || seeds[0].Port != 5432 {
 			t.Errorf("unexpected seed[0]: %+v", seeds[0])
 		}
 		// Адрес узла (Node) используется, если Service.Address пустой

@@ -4,8 +4,16 @@ package main
 import (
 	"DBSentinel/cmd/seeder"
 	"DBSentinel/config"
+	"DBSentinel/internal/app/providers"
+	"DBSentinel/internal/app/topology"
+	"context"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -27,5 +35,92 @@ func main() {
 		seeder.DBSeeder(db)
 	} else {
 		log.Println("Database already contains data. Skipping seeder.")
+	}
+
+	// 1. Инициализация SeedResolver на основе конфигурации приложения
+	staticAddrs := []string{fmt.Sprintf("%s:%d", cfg.PgHostMaster, cfg.PgPortMaster)}
+	if cfg.SeedStaticAddresses != "" {
+		staticAddrs = strings.Split(cfg.SeedStaticAddresses, ",")
+	}
+
+	seedResolver, err := providers.NewSeedResolver(providers.ResolverConfig{
+		ProviderType:    providers.ProviderType(cfg.SeedProviderType),
+		StaticAddresses: staticAddrs,
+		SingleAddress:   fmt.Sprintf("%s:%d", cfg.PgHostMaster, cfg.PgPortMaster),
+		ConsulAddr:      cfg.ConsulAddr,
+		ConsulService:   cfg.ConsulServiceName,
+		ConsulToken:     cfg.ConsulToken,
+		ConsulDC:        cfg.ConsulDC,
+		DNSService:      cfg.DNSService,
+		DNSProto:        cfg.DNSProto,
+		DNSName:         cfg.DNSName,
+		DefaultPort:     cfg.PgPortMaster,
+	})
+	if err != nil {
+		log.Fatalf("Failed to initialize seed resolver: %v", err)
+	}
+
+	// 2. Инициализация коннектора узлов PostgreSQL
+	connector := topology.NewPGConnector(topology.ConnectionConfig{
+		User:     cfg.PgUserMaster,
+		Password: cfg.PgPasswordMaster,
+		Database: cfg.PgDBNameMaster,
+		SSLMode:  "disable",
+	})
+
+	// 3. Инициализация Collector топологии
+	collector := topology.NewCollector(
+		seedResolver.Provider(),
+		topology.WithConnector(connector),
+		topology.WithClusterName("postgres-cluster"),
+		topology.WithDiscoveryDepth(cfg.DiscoveryDepth),
+	)
+
+	// 4. Первичный сбор топологии
+	runCollection(collector)
+
+	// 5. Запуск периодического мониторинга кластера
+	log.Println("DB-Sentinel daemon started. Monitoring cluster every 10 seconds...")
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	for {
+		select {
+		case <-sigChan:
+			log.Println("Shutting down DB-Sentinel daemon...")
+			return
+		case <-ticker.C:
+			runCollection(collector)
+		}
+	}
+}
+
+func runCollection(collector *topology.Collector) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	topo, err := collector.Collect(ctx)
+	if err != nil {
+		log.Printf("Topology collection warning: %v", err)
+		return
+	}
+
+	log.Printf("Topology collected: cluster=%s, nodes=%d, links=%d",
+		topo.ClusterName, len(topo.Nodes), len(topo.Links))
+	if topo.SplitBrainDetected {
+		log.Printf(" [CRITICAL ALERT] SPLIT-BRAIN DETECTED in cluster %s!", topo.ClusterName)
+	}
+	for _, w := range topo.Warnings {
+		log.Printf(" [CLUSTER WARNING] %s", w)
+	}
+	for _, n := range topo.Nodes {
+		log.Printf(" -> Node %s: role=%s, status=%s, version=%s, lagBytes=%d, lagSec=%.2f",
+			n.ID, n.Role, n.Status, n.Version, n.Metrics.ReplicationLagBytes, n.Metrics.ReplicationLagSeconds)
+	}
+	for _, l := range topo.Links {
+		log.Printf(" -> Link %s: %s -> %s (type=%s, status=%s)", l.ID, l.SourceNodeID, l.TargetNodeID, l.Type, l.Status)
 	}
 }

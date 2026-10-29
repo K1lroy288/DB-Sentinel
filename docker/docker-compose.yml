@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_MASTER}
     volumes:
       - postgres-master-data:/var/lib/postgresql
-      - ../server/cmd/setup_master.sh:/docker-entrypoint-initdb.d/setup_master.sh
+      - ../server/cmd/scripts/setup_master.sh:/docker-entrypoint-initdb.d/setup_master.sh
     networks:
       - core-db
     healthcheck:
@@ -32,7 +32,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB_NAME_MASTER}
     volumes:
       - postgres-replica-data:/var/lib/postgresql
-      - ../server/cmd/init_replica.sh:/init_replica.sh
+      - ../server/cmd/scripts/init_replica.sh:/init_replica.sh
     networks:
       - core-db
     healthcheck:
@@ -51,19 +51,10 @@ services:
     secrets:
       - source: server_cert
         target: /etc/dbsentinel/tls/server.crt
-        uid: "1000"
-        gid: "1000"
-        mode: 0400
       - source: server_key
         target: /etc/dbsentinel/tls/server.key
-        uid: "1000"
-        gid: "1000"
-        mode: 0400
       - source: ca_cert
         target: /etc/dbsentinel/tls/ca.crt
-        uid: "1000"
-        gid: "1000"
-        mode: 0400
     ports:
       - "9090:9090"
     environment:
@@ -77,6 +68,8 @@ services:
       - default
     depends_on:
       postgres-master:
+        condition: service_healthy
+      postgres-replica:
         condition: service_healthy
 
 volumes:

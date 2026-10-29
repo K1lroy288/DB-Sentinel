@@ -10,6 +10,7 @@ const (
 	testPgMaster  = "postgres-master"
 	testPgReplica = "postgres-replica"
 	testIPAddr    = "10.0.0.1:5432"
+	testHost10    = "10.0.0.1"
 )
 
 func TestParseEndpoint(t *testing.T) {
@@ -65,7 +66,7 @@ func TestParseEndpoint(t *testing.T) {
 			name:        "quoted raw address",
 			raw:         `"10.0.0.1:5432"`,
 			defaultPort: 5432,
-			wantHost:    "10.0.0.1",
+			wantHost:    testHost10,
 			wantPort:    5432,
 			wantErr:     nil,
 		},

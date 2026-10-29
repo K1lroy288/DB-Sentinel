@@ -10,8 +10,12 @@ func TestLoadConfig_FromENV(t *testing.T) {
 	t.Setenv("POSTGRES_USER_MASTER", "test_user")
 	t.Setenv("POSTGRES_PASSWORD_MASTER", "dummy_pass")
 	t.Setenv("POSTGRES_DB_NAME_MASTER", "test_db")
+	t.Setenv("SEED_PROVIDER_TYPE", "fallback")
+	t.Setenv("SEED_STATIC_ADDRESSES", "node1:5432,node2:5432")
+	t.Setenv("CONSUL_ADDR", "http://127.0.0.1:8500")
+	t.Setenv("CONSUL_SERVICE_NAME", "postgres-service")
+	t.Setenv("DISCOVERY_DEPTH", "2")
 
-	// 2. Загружаем конфиг
 	cfg := loadConfig()
 
 	if cfg == nil {
@@ -28,6 +32,11 @@ func TestLoadConfig_FromENV(t *testing.T) {
 		{"PgMasterUser", cfg.PgUserMaster, "test_user"},
 		{"PgMasterPassword", cfg.PgPasswordMaster, "dummy_pass"},
 		{"PgMasterDBName", cfg.PgDBNameMaster, "test_db"},
+		{"SeedProviderType", cfg.SeedProviderType, "fallback"},
+		{"SeedStaticAddresses", cfg.SeedStaticAddresses, "node1:5432,node2:5432"},
+		{"ConsulAddr", cfg.ConsulAddr, "http://127.0.0.1:8500"},
+		{"ConsulServiceName", cfg.ConsulServiceName, "postgres-service"},
+		{"DiscoveryDepth", cfg.DiscoveryDepth, 2},
 	}
 
 	for _, tt := range tests {
@@ -36,6 +45,17 @@ func TestLoadConfig_FromENV(t *testing.T) {
 				t.Errorf("expected %s to be %v, got %v", tt.name, tt.expected, tt.got)
 			}
 		})
+	}
+}
+
+func TestLoadConfig_Defaults(t *testing.T) {
+	cfg := loadConfig()
+	if cfg == nil {
+		t.Fatal("expected non-nil config")
+	}
+
+	if cfg.DiscoveryDepth <= 0 {
+		t.Errorf("expected default DiscoveryDepth > 0, got %d", cfg.DiscoveryDepth)
 	}
 }
 
