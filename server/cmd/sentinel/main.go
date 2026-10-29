@@ -1,4 +1,4 @@
-// Package main is the entry point for the DB-Sentinel core service.
+// Package main является точкой входа для основного сервиса DB-Sentinel.
 package main
 
 import (
@@ -15,7 +15,7 @@ func main() {
 	cfg := config.GetConfig()
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
-		cfg.PgMasterHost, cfg.PgMasterUser, cfg.PgMasterPassword, cfg.PgMasterDBName, cfg.PgMasterPort)
+		cfg.PgHostMaster, cfg.PgUserMaster, cfg.PgPasswordMaster, cfg.PgDBNameMaster, cfg.PgPortMaster)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

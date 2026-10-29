@@ -1,4 +1,4 @@
-// Package config manages application configuration setup and environment variable binding.
+// Package config управляет настройкой конфигурации приложения и привязкой переменных окружения.
 package config
 
 import (
@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config holds the application configuration parameters loaded from environment variables.
+// Config содержит параметры конфигурации приложения, загруженные из переменных окружения.
 type Config struct {
-	PgMasterHost     string `mapstructure:"PG_MASTER_HOST"`
-	PgMasterPort     int    `mapstructure:"PG_MASTER_PORT"`
-	PgMasterUser     string `mapstructure:"PG_MASTER_USER"`
-	PgMasterPassword string `mapstructure:"PG_MASTER_PASSWORD"`
-	PgMasterDBName   string `mapstructure:"PG_MASTER_DB_NAME"`
+	PgHostMaster     string `mapstructure:"POSTGRES_HOST_MASTER"`
+	PgPortMaster     int    `mapstructure:"POSTGRES_PORT_MASTER"`
+	PgUserMaster     string `mapstructure:"POSTGRES_USER_MASTER"`
+	PgPasswordMaster string `mapstructure:"POSTGRES_PASSWORD_MASTER"`
+	PgDBNameMaster   string `mapstructure:"POSTGRES_DB_NAME_MASTER"`
 }
 
 var (
@@ -22,7 +22,7 @@ var (
 	once     sync.Once
 )
 
-// GetConfig returns a thread-safe singleton instance of the application Config.
+// GetConfig возвращает потокобезопасный синглтон-экземпляр конфигурации приложения Config.
 func GetConfig() *Config {
 	once.Do(func() {
 		instance = loadConfig()
@@ -36,11 +36,11 @@ func loadConfig() *Config {
 	v.AutomaticEnv()
 
 	for _, key := range []string{
-		"PG_MASTER_HOST",
-		"PG_MASTER_PORT",
-		"PG_MASTER_USER",
-		"PG_MASTER_PASSWORD",
-		"PG_MASTER_DB_NAME",
+		"POSTGRES_HOST_MASTER",
+		"POSTGRES_PORT_MASTER",
+		"POSTGRES_USER_MASTER",
+		"POSTGRES_PASSWORD_MASTER",
+		"POSTGRES_DB_NAME_MASTER",
 	} {
 		_ = v.BindEnv(key)
 	}

@@ -1,5 +1,5 @@
-// Package seeder provides functionality for populating the database
-// with initial mock data and checking database state.
+// Package seeder предоставляет функциональность для заполнения базы данных
+// начальными тестовыми данными и проверки состояния базы данных.
 package seeder
 
 import (
@@ -14,7 +14,7 @@ import (
 
 const successStatus = "success"
 
-// User represents a system user entity in the database.
+// User представляет сущность пользователя системы в базе данных.
 type User struct {
 	ID        uint        `gorm:"primaryKey"`
 	Username  string      `gorm:"type:varchar(50);not null;unique"`
@@ -23,14 +23,14 @@ type User struct {
 	Logs      []SystemLog `gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
 }
 
-// AppSetting represents system-wide key-value configuration settings.
+// AppSetting представляет общесистемные параметры конфигурации в формате ключ-значение.
 type AppSetting struct {
 	Key       string    `gorm:"type:varchar(50);primaryKey"`
 	Value     string    `gorm:"type:text;not null"`
 	UpdatedAt time.Time `gorm:"default:now()"`
 }
 
-// SystemLog represents audit logs for system operations and user actions.
+// SystemLog представляет журнал аудита системных операций и действий пользователей.
 type SystemLog struct {
 	ID        uint            `gorm:"primaryKey"`
 	UserID    *uint           `gorm:"index"`
@@ -40,7 +40,7 @@ type SystemLog struct {
 	CreatedAt time.Time       `gorm:"default:now()"`
 }
 
-// DBSeeder drops existing tables, migrates schemas, and populates the database with test data.
+// DBSeeder удаляет существующие таблицы, выполняет миграцию схем и заполняет базу данных тестовыми данными.
 func DBSeeder(db *gorm.DB) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -113,7 +113,7 @@ func DBSeeder(db *gorm.DB) {
 	)
 }
 
-// IsDatabaseEmpty checks if the database needs seeding by verifying table existence and user count.
+// IsDatabaseEmpty проверяет, требуется ли заполнение базы данных, проверяя наличие таблицы и количество пользователей.
 func IsDatabaseEmpty(db *gorm.DB) bool {
 	if !db.Migrator().HasTable(&User{}) {
 		return true

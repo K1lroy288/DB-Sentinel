@@ -2,6 +2,7 @@ package domain
 
 import "fmt"
 
+// Validate проверяет корректность структуры графа топологии и связи между узлами.
 func (g *TopologyGraph) Validate() error {
 	if g.ClusterName == "" {
 		return fmt.Errorf("clusterName is required")

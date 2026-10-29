@@ -7,7 +7,7 @@ set -exu
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
 while true; do
-    IS_RECOVERY=$(psql -At -U "$REPLICATION_USER" -d "$PG_MASTER_DB_NAME" -h postgres-master -c "SELECT pg_is_in_recovery();" 2>/dev/null || echo "error")
+    IS_RECOVERY=$(psql -At -U "$REPLICATION_USER" -d "$POSTGRES_DB_NAME_MASTER" -h postgres-master -c "SELECT pg_is_in_recovery();" 2>/dev/null || echo "error")
     if [ "$IS_RECOVERY" == "f" ]; then
         break
     fi

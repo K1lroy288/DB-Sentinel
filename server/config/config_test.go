@@ -5,11 +5,11 @@ import (
 )
 
 func TestLoadConfig_FromENV(t *testing.T) {
-	t.Setenv("PG_MASTER_HOST", "test-host")
-	t.Setenv("PG_MASTER_PORT", "5432")
-	t.Setenv("PG_MASTER_USER", "test_user")
-	t.Setenv("PG_MASTER_PASSWORD", "dummy_pass")
-	t.Setenv("PG_MASTER_DB_NAME", "test_db")
+	t.Setenv("POSTGRES_HOST_MASTER", "test-host")
+	t.Setenv("POSTGRES_PORT_MASTER", "5432")
+	t.Setenv("POSTGRES_USER_MASTER", "test_user")
+	t.Setenv("POSTGRES_PASSWORD_MASTER", "dummy_pass")
+	t.Setenv("POSTGRES_DB_NAME_MASTER", "test_db")
 
 	// 2. Загружаем конфиг
 	cfg := loadConfig()
@@ -23,11 +23,11 @@ func TestLoadConfig_FromENV(t *testing.T) {
 		got      interface{}
 		expected interface{}
 	}{
-		{"PgMasterHost", cfg.PgMasterHost, "test-host"},
-		{"PgMasterPort", cfg.PgMasterPort, 5432},
-		{"PgMasterUser", cfg.PgMasterUser, "test_user"},
-		{"PgMasterPassword", cfg.PgMasterPassword, "dummy_pass"},
-		{"PgMasterDBName", cfg.PgMasterDBName, "test_db"},
+		{"PgMasterHost", cfg.PgHostMaster, "test-host"},
+		{"PgMasterPort", cfg.PgPortMaster, 5432},
+		{"PgMasterUser", cfg.PgUserMaster, "test_user"},
+		{"PgMasterPassword", cfg.PgPasswordMaster, "dummy_pass"},
+		{"PgMasterDBName", cfg.PgDBNameMaster, "test_db"},
 	}
 
 	for _, tt := range tests {
