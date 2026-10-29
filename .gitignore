@@ -1,32 +1,118 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+# ==========================================
+# DB-Sentinel Comprehensive .gitignore
+# ==========================================
+
+# ------------------------------------------
+# 1. Security, Credentials & Secrets
+# ------------------------------------------
+# Environment variables containing sensitive passwords, tokens, API keys
+*.env
+*.env.*
+!.env.example
+!*.env.example
+
+# Private keys, certificates, TLS artifacts
+*.pem
+*.key
+*.csr
+*.crt
+# Allow local development/test certificates inside server/tls for unit tests
+!server/tls/ca.crt
+!server/tls/ca.key
+!server/tls/server.crt
+!server/tls/server.key
+
+# Sensitive dumps and logs
+*.log
+*.sql
+*.sql.gz
+*.dump
+*.tar.gz
+
+# ------------------------------------------
+# 2. Node.js & Frontend (Vue 3 / Vite)
+# ------------------------------------------
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build and output directories
+client/dist/
+dist-ssr/
+*.local
+
+# Vite and bundler cache
+.vite/
+.turbo/
+.cache/
+
+# TypeScript build info and generated declarations
+*.tsbuildinfo
+client/vite.config.d.ts
+client/vite.config.js
+
+# NPM / Yarn / PNPM debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ------------------------------------------
+# 3. Go (Golang) Backend
+# ------------------------------------------
+# Compiled binaries
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+sentinel
+dbsentinel
+server/sentinel
+server/cmd/sentinel/sentinel
 
-# Test binary, built with `go test -c`
+# Test and coverage artifacts
 *.test
-
-# Code coverage profiles and other test artifacts
 *.out
 coverage.*
 *.coverprofile
 profile.cov
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
+# Go workspace files
 go.work
 go.work.sum
 
-# env file
-.env
+# Go vendor directory
+vendor/
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# ------------------------------------------
+# 4. Docker & Local Infrastructure
+# ------------------------------------------
+# Docker data volumes mounted to host
+postgres-master-data/
+postgres-replica-data/
+*.sock
+
+# ------------------------------------------
+# 5. OS & Editor Junk
+# ------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+*~
+*.bak
