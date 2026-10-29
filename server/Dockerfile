@@ -20,6 +20,7 @@ WORKDIR /app
 
 COPY --from=builder --chown=nobody:nobody /app/dbsentinel .
 
+EXPOSE 8080
 EXPOSE 3425
 
 CMD ["./dbsentinel"]

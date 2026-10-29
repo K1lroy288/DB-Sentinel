@@ -56,6 +56,7 @@ services:
       - source: ca_cert
         target: /etc/dbsentinel/tls/ca.crt
     ports:
+      - "8080:8080"
       - "9090:9090"
     environment:
       DB_SENTINEL_TLS_CERT: "/etc/dbsentinel/tls/server.crt"

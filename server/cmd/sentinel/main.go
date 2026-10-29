@@ -6,8 +6,11 @@ import (
 	"DBSentinel/config"
 	"DBSentinel/internal/app/providers"
 	"DBSentinel/internal/app/topology"
+	internalHttp "DBSentinel/internal/transport/http"
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"os/signal"
@@ -18,6 +21,9 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+//go:embed dist/*
+var embeddedDist embed.FS
 
 func main() {
 	cfg := config.GetConfig()
@@ -76,12 +82,26 @@ func main() {
 		topology.WithDiscoveryDepth(cfg.DiscoveryDepth),
 	)
 
-	// 4. Первичный сбор топологии
-	runCollection(collector)
+	// 4. Инициализация встроенного веб-сервера (SPA + WebSocket)
+	hub := internalHttp.NewHub()
+	staticFS, err := fs.Sub(embeddedDist, "dist")
+	if err != nil {
+		log.Printf("Warning: failed to initialize embedded frontend: %v", err)
+	}
 
-	// 5. Запуск периодического мониторинга кластера
-	log.Println("DB-Sentinel daemon started. Monitoring cluster every 10 seconds...")
-	ticker := time.NewTicker(10 * time.Second)
+	httpServer := internalHttp.NewServer(internalHttp.Config{Addr: ":8080"}, staticFS, hub)
+	go func() {
+		if err := httpServer.Start(); err != nil {
+			log.Printf("HTTP server stopped: %v", err)
+		}
+	}()
+
+	// 5. Первичный сбор топологии
+	runCollection(collector, hub)
+
+	// 6. Запуск периодического мониторинга кластера
+	log.Println("DB-Sentinel daemon started. Web UI available on http://localhost:8080")
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	sigChan := make(chan os.Signal, 1)
@@ -91,14 +111,17 @@ func main() {
 		select {
 		case <-sigChan:
 			log.Println("Shutting down DB-Sentinel daemon...")
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			_ = httpServer.Shutdown(shutdownCtx)
 			return
 		case <-ticker.C:
-			runCollection(collector)
+			runCollection(collector, hub)
 		}
 	}
 }
 
-func runCollection(collector *topology.Collector) {
+func runCollection(collector *topology.Collector, hub *internalHttp.Hub) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -106,6 +129,11 @@ func runCollection(collector *topology.Collector) {
 	if err != nil {
 		log.Printf("Topology collection warning: %v", err)
 		return
+	}
+
+	// Транслируем обновлённую топологию всем клиентам через WebSocket
+	if hub != nil {
+		hub.Broadcast(topo)
 	}
 
 	log.Printf("Topology collected: cluster=%s, nodes=%d, links=%d",

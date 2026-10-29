@@ -36,4 +36,3 @@ func TestCleanVersion(t *testing.T) {
 		})
 	}
 }
-

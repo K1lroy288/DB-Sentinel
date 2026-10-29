@@ -1,0 +1,74 @@
+@import '@vue-flow/core/dist/style.css';
+@import '@vue-flow/core/dist/theme-default.css';
+@import '@vue-flow/controls/dist/style.css';
+@import '@vue-flow/minimap/dist/style.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom dark styling for Vue Flow canvas */
+.vue-flow {
+  background-color: #0B0F19;
+}
+
+.vue-flow__edge-path {
+  stroke-width: 2.5;
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}
+
+/* Streaming animations for edges */
+@keyframes streamFlow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.edge-stream-fast {
+  stroke-dasharray: 6 4;
+  animation: streamFlow 0.8s linear infinite;
+}
+
+.edge-stream-medium {
+  stroke-dasharray: 6 5;
+  animation: streamFlow 1.6s linear infinite;
+}
+
+.edge-stream-slow {
+  stroke-dasharray: 6 6;
+  animation: streamFlow 3s linear infinite;
+}
+
+.edge-stream-broken {
+  stroke-dasharray: 8 6;
+  animation: none;
+}
+
+/* Minimap dark overrides */
+.vue-flow__minimap {
+  background-color: #111827 !important;
+  border: 1px solid #1F2937 !important;
+  border-radius: 8px !important;
+}
+
+/* Controls dark overrides */
+.vue-flow__controls {
+  background-color: #111827 !important;
+  border: 1px solid #1F2937 !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.vue-flow__controls-button {
+  background-color: #111827 !important;
+  border-bottom: 1px solid #1F2937 !important;
+  color: #9CA3AF !important;
+}
+
+.vue-flow__controls-button:hover {
+  background-color: #1F2937 !important;
+  color: #F3F4F6 !important;
+}
