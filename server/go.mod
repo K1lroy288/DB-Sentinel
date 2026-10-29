@@ -3,6 +3,7 @@ module DBSentinel
 go 1.26.5
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/spf13/viper v1.21.0
 	gorm.io/driver/postgres v1.6.2
@@ -10,7 +11,6 @@ require (
 )
 
 require (
-	github.com/coder/websocket v1.8.15 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
