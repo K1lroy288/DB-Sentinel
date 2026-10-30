@@ -11,8 +11,11 @@ services:
     volumes:
       - postgres-master-data:/var/lib/postgresql
       - ../server/cmd/scripts/setup_master.sh:/docker-entrypoint-initdb.d/setup_master.sh
+    ports:
+      - "5432:5432"
     networks:
       - core-db
+      - default
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -20,10 +23,10 @@ services:
       retries: 12
       start_period: 30s
 
-  postgres-replica:
+  postgres-replica-async:
     image: postgres:18
-    entrypoint: ["bash", "/init_replica.sh"]
-    container_name: postgres-replica
+    entrypoint: ["bash", "/init_replica_async.sh"]
+    container_name: postgres-replica-async
     env_file:
       - ../server/.env
     environment:
@@ -31,10 +34,13 @@ services:
       POSTGRES_PASSWORD: ${REPLICATION_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB_NAME_MASTER}
     volumes:
-      - postgres-replica-data:/var/lib/postgresql
-      - ../server/cmd/scripts/init_replica.sh:/init_replica.sh
+      - postgres-replica-async-data:/var/lib/postgresql
+      - ../server/cmd/scripts/init_replica_async.sh:/init_replica_async.sh
+    ports:
+      - "5433:5432"
     networks:
       - core-db
+      - default
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -43,6 +49,90 @@ services:
       start_period: 20s
     depends_on:
       postgres-master:
+        condition: service_healthy
+
+  postgres-replica-sync:
+    image: postgres:18
+    entrypoint: ["bash", "/init_replica_sync.sh"]
+    container_name: postgres-replica-sync
+    env_file:
+      - ../server/.env
+    environment:
+      POSTGRES_USER: ${REPLICATION_USER}
+      POSTGRES_PASSWORD: ${REPLICATION_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME_MASTER}
+    volumes:
+      - postgres-replica-sync-data:/var/lib/postgresql
+      - ../server/cmd/scripts/init_replica_sync.sh:/init_replica_sync.sh
+    ports:
+      - "5434:5432"
+    networks:
+      - core-db
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      postgres-master:
+        condition: service_healthy
+
+  postgres-replica-delayed:
+    image: postgres:18
+    entrypoint: ["bash", "/init_replica_delayed.sh"]
+    container_name: postgres-replica-delayed
+    env_file:
+      - ../server/.env
+    environment:
+      POSTGRES_USER: ${REPLICATION_USER}
+      POSTGRES_PASSWORD: ${REPLICATION_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME_MASTER}
+    volumes:
+      - postgres-replica-delayed-data:/var/lib/postgresql
+      - ../server/cmd/scripts/init_replica_delayed.sh:/init_replica_delayed.sh
+    ports:
+      - "5435:5432"
+    networks:
+      - core-db
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      postgres-master:
+        condition: service_healthy
+
+  postgres-replica-cascading:
+    image: postgres:18
+    entrypoint: ["bash", "/init_replica_cascading.sh"]
+    container_name: postgres-replica-cascading
+    env_file:
+      - ../server/.env
+    environment:
+      POSTGRES_USER: ${REPLICATION_USER}
+      POSTGRES_PASSWORD: ${REPLICATION_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME_MASTER}
+    volumes:
+      - postgres-replica-cascading-data:/var/lib/postgresql
+      - ../server/cmd/scripts/init_replica_cascading.sh:/init_replica_cascading.sh
+    ports:
+      - "5436:5432"
+    networks:
+      - core-db
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      postgres-replica-async:
         condition: service_healthy
 
   dbsentinel-core:
@@ -70,12 +160,21 @@ services:
     depends_on:
       postgres-master:
         condition: service_healthy
-      postgres-replica:
+      postgres-replica-async:
+        condition: service_healthy
+      postgres-replica-sync:
+        condition: service_healthy
+      postgres-replica-delayed:
+        condition: service_healthy
+      postgres-replica-cascading:
         condition: service_healthy
 
 volumes:
   postgres-master-data:
-  postgres-replica-data:
+  postgres-replica-async-data:
+  postgres-replica-sync-data:
+  postgres-replica-delayed-data:
+  postgres-replica-cascading-data:
 
 networks:
   core-db:

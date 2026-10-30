@@ -4,6 +4,7 @@ import (
 	"DBSentinel/internal/domain"
 	"context"
 	"fmt"
+	"net"
 	"strings"
 	"sync"
 	"time"
@@ -273,16 +274,61 @@ func filterValidLinks(
 	linksMap map[string]domain.ReplicationLink,
 ) []domain.ReplicationLink {
 	links := make([]domain.ReplicationLink, 0, len(linksMap))
+	seenPairs := make(map[string]bool)
+
 	for _, link := range linksMap {
-		if _, srcExists := nodesMap[link.SourceNodeID]; !srcExists {
+		srcID, srcExists := resolveNodeID(nodesMap, link.SourceNodeID)
+		if !srcExists {
 			continue
 		}
-		if _, tgtExists := nodesMap[link.TargetNodeID]; !tgtExists {
+		tgtID, tgtExists := resolveNodeID(nodesMap, link.TargetNodeID)
+		if !tgtExists {
 			continue
 		}
+
+		pairKey := fmt.Sprintf("%s->%s", srcID, tgtID)
+		if seenPairs[pairKey] {
+			continue
+		}
+		seenPairs[pairKey] = true
+
+		link.SourceNodeID = srcID
+		link.TargetNodeID = tgtID
 		links = append(links, link)
 	}
 	return links
+}
+
+func resolveNodeID(nodesMap map[string]domain.DatabaseNode, id string) (string, bool) {
+	if _, exists := nodesMap[id]; exists {
+		return id, true
+	}
+
+	host, port, err := net.SplitHostPort(id)
+	if err != nil {
+		return "", false
+	}
+
+	for nodeKey, node := range nodesMap {
+		nodeHost, nodePort, err := net.SplitHostPort(nodeKey)
+		if err != nil || nodePort != port {
+			continue
+		}
+		if node.Hostname == host || nodeHost == host {
+			return nodeKey, true
+		}
+	}
+
+	if ips, err := net.LookupIP(host); err == nil {
+		for _, ip := range ips {
+			candidate := net.JoinHostPort(ip.String(), port)
+			if _, exists := nodesMap[candidate]; exists {
+				return candidate, true
+			}
+		}
+	}
+
+	return "", false
 }
 
 func detectGraphAnomalies(nodes []domain.DatabaseNode) (bool, []string) {
